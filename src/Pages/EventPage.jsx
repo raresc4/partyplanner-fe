@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 import { getMonth } from "../Actions/utils";
@@ -6,11 +7,15 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { getEvent, updateEvent, deleteEvent } from "../Actions/event";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import AddTaskModal from "../Components/AddTaskModal";
+import AddUserModal from "../Components/AddUserModal";
 
 export default function EventPage({ loggedUser }) {
   const { name } = useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
   const getTime = (hour) => {
     if (hour > 12) {
@@ -105,6 +110,32 @@ export default function EventPage({ loggedUser }) {
     }
   };
 
+  const handleAddTask = (newTask) => {
+    queryClient.setQueryData(["event", name], (oldData) => {
+      const updatedEvent = {
+        ...oldData,
+        tasks: [...oldData.tasks, newTask],
+      };
+      // We also update it on the server right away
+      updateEventMutation(updatedEvent);
+      return updatedEvent;
+    });
+    setIsAddTaskModalOpen(false);
+  };
+
+  const handleAddUser = (newUser) => {
+    queryClient.setQueryData(["event", name], (oldData) => {
+      const updatedEvent = {
+        ...oldData,
+        involvedUsers: [...oldData.involvedUsers, newUser],
+      };
+      // We also update it on the server right away
+      updateEventMutation(updatedEvent);
+      return updatedEvent;
+    });
+    setIsAddUserModalOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="w-[100vw] h-[100vh] flex items-center justify-center">
@@ -130,11 +161,21 @@ export default function EventPage({ loggedUser }) {
   }
 
   return (
-    <div className="w-[100vw] h-[100vh] flex flex-col items-start pt-2 pl-2 pr-2 justify-between">
-      <Navbar />
-      <div className="w-full h-full flex flex-row justify-center items-start gap-x-8">
-        <div className="flex flex-col justify-start items-start h-full w-64 p-4 border-8 border-gray-600 gap-y-4">
-          <h1 className="text-2xl font-bold"> Members </h1>
+    <div className="w-full min-h-screen flex flex-col items-start pt-2 px-4 lg:px-8 justify-between">
+      <div className="w-full"><Navbar /></div>
+      <div className="w-full flex flex-col lg:flex-row justify-center items-start gap-y-8 lg:gap-y-0 lg:gap-x-8 my-4 flex-1">
+        <div className="flex flex-col justify-start items-start w-full lg:w-64 h-auto p-4 border-8 border-gray-600 gap-y-4">
+          <div className="flex justify-between items-center w-full">
+            <h1 className="text-2xl font-bold"> Members </h1>
+            {event.admin === loggedUser.username && (
+              <button
+                className="bg-black text-white px-2 py-1 rounded-lg hover:bg-gray-800 transition-colors font-bold text-sm"
+                onClick={() => setIsAddUserModalOpen(true)}
+              >
+                Add
+              </button>
+            )}
+          </div>
           {event.involvedUsers.map((user, index) => (
             <div
               key={index}
@@ -155,7 +196,17 @@ export default function EventPage({ loggedUser }) {
 
         <div className="w-full flex flex-col justify-start items-center">
           <div className="w-full flex flex-col gap-y-4 border-gray-600 border-8 p-4">
-            <h1 className="text-2xl font-bold"> Tasks </h1>
+            <div className="flex justify-between items-center w-full">
+              <h1 className="text-2xl font-bold"> Tasks </h1>
+              {event.admin === loggedUser.username && (
+                <button
+                  className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors font-bold"
+                  onClick={() => setIsAddTaskModalOpen(true)}
+                >
+                  Add Task
+                </button>
+              )}
+            </div>
 
             {event.tasks.map((task, index) => (
               <div
@@ -181,7 +232,7 @@ export default function EventPage({ loggedUser }) {
 
                 <div
                   key={index}
-                  className="w-full flex flex-row justify-start items-center"
+                  className="w-full flex flex-row flex-wrap justify-start items-center mt-4 gap-y-2"
                 >
                   <p>{task.assignee}</p>
                   {(task.assignee === loggedUser.username ||
@@ -240,7 +291,7 @@ export default function EventPage({ loggedUser }) {
           </div>
         </div>
 
-        <div className="flex flex-col justify-start items-start h-full w-96 p-4 border-8 border-gray-600 gap-y-4">
+        <div className="flex flex-col justify-start items-start w-full lg:w-96 h-auto p-4 border-8 border-gray-600 gap-y-4">
           <h1 className="text-2xl font-bold"> Current Event </h1>
           <div className="w-full flex flex-row justify-start items-center gap-x-2">
             <div className="flex flex-col justify-center items-center text-lg font-bold">
@@ -256,17 +307,39 @@ export default function EventPage({ loggedUser }) {
               </p>
             </div>
           </div>
+          {event.admin === loggedUser.username && (
+            <button
+              className="shrink-0 inline-block w-56 rounded-lg bg-black py-3 font-bold text-white"
+              onClick={() => {
+                deleteEventMutation(name);
+              }}
+            >
+              Mark event as done
+            </button>
+          )}
           <button
             className="shrink-0 inline-block w-56 rounded-lg bg-black py-3 font-bold text-white"
             onClick={() => {
-              deleteEventMutation(name);
+              navigate(`/room/${name}/statistics`);
             }}
           >
-            Mark event as done
+            View Statistics
           </button>
         </div>
       </div>
       <Footer />
+      <AddTaskModal
+        isOpen={isAddTaskModalOpen}
+        onClose={() => setIsAddTaskModalOpen(false)}
+        onSubmit={handleAddTask}
+        involvedUsers={event.involvedUsers}
+      />
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onSubmit={handleAddUser}
+        involvedUsers={event.involvedUsers}
+      />
     </div>
   );
 }

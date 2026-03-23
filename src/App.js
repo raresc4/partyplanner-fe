@@ -2,6 +2,7 @@ import LoginPage from "./Pages/LoginPage";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RegisterPage from "./Pages/RegisterPage";
 import EventPage from "./Pages/EventPage";
+import StatisticsPage from "./Pages/StatisticsPage";
 import MainPage from "./Pages/MainPage";
 import ProfilePage from "./Pages/ProfilePage";
 import AboutPage from "./Pages/AboutPage";
@@ -61,6 +62,10 @@ function AppRoutes() {
         <Route
           path="/room/:name"
           element={<EventPage loggedUser={loggedUser} />}
+        />
+        <Route
+          path="/room/:name/statistics"
+          element={<StatisticsPage loggedUser={loggedUser} />}
         />
         <Route path="/" element={<MainPage />} />
         <Route path="/about" element={<AboutPage />} />

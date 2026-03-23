@@ -87,3 +87,19 @@ export async function deleteUser(username) {
     throw new Error(data.message);
   }
 }
+
+export async function getAllExcludingSome(usernames) {
+  const response = await fetch(`${API_URL}/user/getAllExcludingSome`, {
+    method: "POST",
+    headers: getHeader(),
+    body: JSON.stringify({ usernames }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch users");
+  }
+
+  return data;
+}

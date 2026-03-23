@@ -73,3 +73,18 @@ export async function deleteEvent(eventname) {
     throw new Error();
   }
 }
+
+export async function getEventStatistics(eventname) {
+  const response = await fetch(`${API_URL}/statistics/${eventname}`, {
+    method: "GET",
+    headers: getHeader(),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch statistics");
+  }
+
+  return data;
+}
+
